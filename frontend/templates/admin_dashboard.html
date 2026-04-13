@@ -158,12 +158,14 @@
             document.getElementById('count-pending').innerText = data.filter(l => !l.is_approved).length;
             document.getElementById('count-regions').innerText = new Set(data.map(l => l.lat.toFixed(1))).size;
 
-            data.forEach(l => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <img src="/uploads/${l.images[0] || 'placeholder.jpg'}" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;">
+                data.forEach(l => {
+                    const firstImg = l.images && l.images.length > 0 ? l.images[0] : 'placeholder.jpg';
+                    const imgUrl = firstImg.startsWith('http') ? firstImg : `/uploads/${firstImg}`;
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <img src="${imgUrl}" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;">
                             <div>
                                 <div style="font-weight: 600;">${l.title}</div>
                                 <div style="font-size: 0.75rem; color: var(--text-gray);">${l.amenities.slice(0, 2).join(', ')}</div>

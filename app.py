@@ -9,6 +9,8 @@ import json
 from werkzeug.utils import secure_filename
 from flask_mail import Mail, Message
 import random
+import cloudinary
+import cloudinary.uploader
 
 # Load environment variables
 load_dotenv()
@@ -42,6 +44,14 @@ app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
 
 mail = Mail(app)
+
+# Cloudinary Configuration
+cloudinary.config(
+  cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME"),
+  api_key = os.getenv("CLOUDINARY_API_KEY"),
+  api_secret = os.getenv("CLOUDINARY_API_SECRET"),
+  secure = True
+)
 
 # MongoDB Collections
 listings_collection = db.listings
@@ -223,17 +233,17 @@ def add_listing():
     data['lon'] = float(data.get('lon', 0))
     data['amenities'] = data.get('amenities', '').split(',')
     
-    # Handle files
+    # Handle files (Upload to Cloudinary)
     images = []
     if 'images' in request.files:
         files = request.files.getlist('images')
         for file in files:
             if file and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-                filename = f"{timestamp}_{filename}"
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                images.append(filename)
+                try:
+                    upload_result = cloudinary.uploader.upload(file, folder="greenroom_rentals")
+                    images.append(upload_result['secure_url'])
+                except Exception as e:
+                    print(f"Cloudinary Error: {e}")
     
     # Status handling
     is_admin = session.get('is_admin', False)

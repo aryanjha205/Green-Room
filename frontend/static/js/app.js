@@ -54,8 +54,9 @@ function renderListings(listings) {
         card.className = 'property-card fade-up';
         card.style.animationDelay = `${idx * 0.05}s`;
         
-        const imageUrl = room.images && room.images.length > 0 
-            ? `/uploads/${room.images[0]}` 
+        const firstImg = room.images && room.images.length > 0 ? room.images[0] : null;
+        const imageUrl = firstImg 
+            ? (firstImg.startsWith('http') ? firstImg : `/uploads/${firstImg}`) 
             : 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=80&w=400';
 
         card.innerHTML = `
@@ -88,10 +89,12 @@ function updateMapMarkers(listings) {
 
     listings.forEach(room => {
         if(room.lat && room.lon) {
+            const firstImg = room.images && room.images.length > 0 ? room.images[0] : '';
+            const imgPath = firstImg.startsWith('http') ? firstImg : `/uploads/${firstImg}`;
             const marker = L.marker([room.lat, room.lon]).addTo(map);
             marker.bindPopup(`
                 <div style="min-width: 150px; font-family: 'Outfit';">
-                    <img src="/uploads/${room.images[0] || ''}" style="width: 100%; height: 80px; object-fit: cover; border-radius: 8px; margin-bottom: 8px;">
+                    <img src="${imgPath}" style="width: 100%; height: 80px; object-fit: cover; border-radius: 8px; margin-bottom: 8px;">
                     <b style="color: var(--primary);">${room.title}</b><br>
                     <span style="font-weight: 700;">₹${room.price} / mo</span><br>
                     <span style="font-size: 0.8rem; color: #666;">Deposit: ₹${room.deposit}</span><br>
