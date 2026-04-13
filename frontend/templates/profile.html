@@ -58,6 +58,11 @@
                     <div class="stat-lbl">Account Status</div>
                 </div>
             </div>
+            
+            <!-- PWA Install Button -->
+            <button id="pwa-install-btn" class="btn-primary" style="display: none; margin-top: 1.5rem; background: var(--text-dark); gap: 10px; align-items: center; justify-content: center;">
+                <i data-lucide="download-cloud"></i> Install GreenRoom App
+            </button>
         </div>
 
         <!-- Profile Completion Form -->
@@ -211,6 +216,28 @@
         }
 
         initProfile();
+
+        // PWA Install Logic
+        let deferredPrompt;
+        const installBtn = document.getElementById('pwa-install-btn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.style.display = 'flex';
+            lucide.createIcons();
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    installBtn.style.display = 'none';
+                }
+                deferredPrompt = null;
+            }
+        });
 
         // Notification JS (reused)
         async function fetchNotifications() {
