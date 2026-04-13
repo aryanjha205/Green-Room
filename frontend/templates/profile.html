@@ -179,24 +179,29 @@
                 return;
             }
 
-            grid.innerHTML = data.map(room => `
-                <div class="property-card fade-up">
-                    <div class="card-img-container">
-                        <img src="${room.images[0] || 'https://via.placeholder.com/400x300'}" alt="${room.title}">
-                        <div class="status-overlay" style="position: absolute; top: 10px; right: 10px;">
-                            <span class="status-badge ${room.is_approved ? 'status-approved' : 'status-pending'}">
-                                ${room.is_approved ? 'Live' : 'Pending Review'}
-                            </span>
+            grid.innerHTML = data.map(room => {
+                const firstImg = room.images && room.images.length > 0 ? room.images[0] : '';
+                const imgUrl = firstImg.startsWith('http') ? firstImg : (firstImg ? `/uploads/${firstImg}` : 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=80&w=400');
+                
+                return `
+                    <div class="property-card fade-up">
+                        <div class="card-img-container">
+                            <img src="${imgUrl}" alt="${room.title}" onerror="this.src='https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=80&w=400'">
+                            <div class="status-overlay" style="position: absolute; top: 10px; right: 10px;">
+                                <span class="status-badge ${room.is_approved ? 'status-approved' : 'status-pending'}">
+                                    ${room.is_approved ? 'Live' : 'Pending Review'}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <h4 class="card-title" style="font-size: 0.95rem;">${room.title}</h4>
+                            <div style="font-size: 0.8rem; color: var(--text-gray); margin-top: 5px;">
+                                ₹${room.price.toLocaleString()} / month
+                            </div>
                         </div>
                     </div>
-                    <div class="card-content">
-                        <h4 class="card-title" style="font-size: 0.95rem;">${room.title}</h4>
-                        <div style="font-size: 0.8rem; color: var(--text-gray); margin-top: 5px;">
-                            ₹${room.price.toLocaleString()} / month
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
             lucide.createIcons();
         }
 

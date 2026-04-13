@@ -278,6 +278,35 @@ def get_user_listings():
         l['_id'] = str(l['_id'])
     return jsonify(listings)
 
+@app.route('/api/listings/<id>/inquiry', methods=['POST'])
+def send_inquiry(id):
+    sender_email = session.get('user_email')
+    if not sender_email:
+        return jsonify({"success": False, "message": "Please login to send inquiries"}), 401
+        
+    data = request.json
+    message_text = data.get('message')
+    if not message_text:
+        return jsonify({"success": False, "message": "Message is required"}), 400
+        
+    listing = listings_collection.find_one({"_id": ObjectId(id)})
+    if not listing:
+        return jsonify({"success": False, "message": "Listing not found"}), 404
+        
+    owner_email = listing.get('email')
+    
+    if not owner_email:
+        return jsonify({"success": False, "message": "Owner contact not found"}), 400
+
+    try:
+        msg = Message(f"New Inquiry: {listing['title']} | GreenRoom", recipients=[owner_email])
+        msg.body = f"Hello,\n\nYou have received a new inquiry for your property '{listing['title']}'.\n\nFrom: {sender_email}\nMessage: {message_text}\n\nYou can reach out to them via email or check your dashboard.\n\nBest,\nGreenRoom Team"
+        mail.send(msg)
+        return jsonify({"success": True})
+    except Exception as e:
+        print(f"Inquiry Mail Error: {e}")
+        return jsonify({"success": False, "message": "Failed to send email"}), 500
+
 @app.route('/api/listings', methods=['POST'])
 def add_listing():
     # Remove the hard requirement: if not session.get('is_admin'): return ...
@@ -294,6 +323,7 @@ def add_listing():
     images = []
     if 'images' in request.files:
         files = request.files.getlist('images')
+        print(f"DEBUG: Received {len(files)} files for upload")
         for file in files:
             if file and allowed_file(file.filename):
                 try:
@@ -301,6 +331,10 @@ def add_listing():
                     images.append(upload_result['secure_url'])
                 except Exception as e:
                     print(f"Cloudinary Error: {e}")
+            else:
+                print(f"DEBUG: File rejected or empty: {file.filename if file else 'None'}")
+    
+    print(f"DEBUG: Successfully uploaded {len(images)} images")
     
     # Status handling
     is_admin = session.get('is_admin', False)
