@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login | GreenRoom</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="manifest" href="/static/manifest_admin.json">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .pin-wrapper { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .num-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 2rem; }
+        .num-btn { width: 64px; height: 64px; border-radius: 50%; border: 1px solid #eee; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; background: #fff; cursor: pointer; transition: 0.2s; }
+        .num-btn:active { background: var(--primary); color: #fff; }
+        .pin-dots { display: flex; gap: 15px; margin-bottom: 20px; }
+        .pin-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--primary); transition: 0.2s; }
+        .pin-dot.filled { background: var(--primary); }
+    </style>
+</head>
+<body>
+
+    <div class="pin-wrapper">
+        <h2 style="margin-bottom: 8px;">Admin Access</h2>
+        <p style="color: var(--text-gray); margin-bottom: 30px;">Enter secure PIN to continue</p>
+        
+        <div class="pin-dots" id="pin-dots">
+            <div class="pin-dot"></div>
+            <div class="pin-dot"></div>
+            <div class="pin-dot"></div>
+            <div class="pin-dot"></div>
+            <div class="pin-dot"></div>
+        </div>
+
+        <div class="num-pad">
+            <button class="num-btn" onclick="tap(1)">1</button>
+            <button class="num-btn" onclick="tap(2)">2</button>
+            <button class="num-btn" onclick="tap(3)">3</button>
+            <button class="num-btn" onclick="tap(4)">4</button>
+            <button class="num-btn" onclick="tap(5)">5</button>
+            <button class="num-btn" onclick="tap(6)">6</button>
+            <button class="num-btn" onclick="tap(7)">7</button>
+            <button class="num-btn" onclick="tap(8)">8</button>
+            <button class="num-btn" onclick="tap(9)">9</button>
+            <button class="num-btn" onclick="clearPin()"><i data-lucide="x"></i></button>
+            <button class="num-btn" onclick="tap(0)">0</button>
+            <button class="num-btn" onclick="backspace()"><i data-lucide="delete"></i></button>
+        </div>
+        
+        <p id="error-msg" style="color: #ff5252; margin-top: 20px; font-weight: 500; opacity: 0;"></p>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        let pin = "";
+        const dots = document.querySelectorAll('.pin-dot');
+        const errorMsg = document.getElementById('error-msg');
+
+        function tap(num) {
+            if (pin.length < 5) {
+                pin += num;
+                updateDots();
+                if (pin.length === 5) {
+                    verifyPin();
+                }
+            }
+        }
+
+        function updateDots() {
+            dots.forEach((dot, i) => {
+                if (i < pin.length) dot.classList.add('filled');
+                else dot.classList.remove('filled');
+            });
+        }
+
+        function clearPin() {
+            pin = "";
+            updateDots();
+        }
+
+        function backspace() {
+            pin = pin.slice(0, -1);
+            updateDots();
+        }
+
+        async function verifyPin() {
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pin })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    window.location.href = '/admin/dashboard';
+                } else {
+                    showError(data.message);
+                }
+            } catch (e) {
+                showError("Network Error");
+            }
+        }
+
+        function showError(msg) {
+            errorMsg.innerText = msg;
+            errorMsg.style.opacity = 1;
+            pin = "";
+            setTimeout(() => {
+                updateDots();
+                errorMsg.style.opacity = 0;
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>List Your Property | GreenRoom</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .page-container { max-width: 600px; margin: 2rem auto; padding: 0 1.5rem; }
+        .success-card { display: none; text-align: center; background: white; padding: 3rem; border-radius: 24px; box-shadow: var(--shadow-soft); }
+        .success-icon { width: 64px; height: 64px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="/" class="logo">
+            <i data-lucide="home" style="color: var(--primary);"></i>
+            <span>Green<span>Room</span></span>
+        </a>
+    </header>
+
+    <div class="page-container">
+        <!-- Auth Section -->
+        <div id="auth-section" style="display: none;">
+            <h1>Join GreenRoom</h1>
+            <p style="color: var(--text-gray); margin-bottom: 2rem;">Verify your email to list properties and contact owners.</p>
+            
+            <div id="email-step">
+                <div class="input-group">
+                    <label>Email Address</label>
+                    <input type="email" id="auth-email" placeholder="you@example.com">
+                </div>
+                <button onclick="sendOTP()" class="btn-primary" id="otp-send-btn">Send OTP</button>
+            </div>
+
+            <div id="otp-step" style="display: none;">
+                <div class="input-group">
+                    <label>Enter 6-Digit OTP</label>
+                    <input type="text" id="auth-otp" placeholder="123456" maxlength="6">
+                </div>
+                <button onclick="verifyOTP()" class="btn-primary" id="otp-verify-btn">Verify & Continue</button>
+                <p style="text-align: center; margin-top: 1rem;"><a href="javascript:void(0)" onclick="resetAuth()" style="color: var(--primary); font-size: 0.9rem;">Change Email</a></p>
+            </div>
+        </div>
+
+        <div id="form-section">
+            <h1 style="margin-bottom: 8px;">List Your Flat</h1>
+            <p style="color: var(--text-gray); margin-bottom: 2rem;">Fill in the details to reach thousands of seekers today.</p>
+
+            <form id="owner-flat-form" class="form-container" style="margin: 0;">
+                <div class="input-group">
+                    <label>Property Title</label>
+                    <input type="text" name="title" placeholder="e.g. Sunny 1BHK in Bandra" required>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="input-group">
+                        <label>Monthly Rent (₹)</label>
+                        <input type="number" name="price" placeholder="20000" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Deposit (₹)</label>
+                        <input type="number" name="deposit" placeholder="40000" required>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="input-group">
+                        <label>Latitude</label>
+                        <input type="text" name="lat" id="lat-field" placeholder="19.076" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Longitude</label>
+                        <input type="text" name="lon" id="lon-field" placeholder="72.877" required>
+                    </div>
+                </div>
+                <button type="button" onclick="detectLocation()" style="background: #f0fdf4; color: var(--primary); border: 1px dashed var(--primary); padding: 8px; border-radius: 8px; font-size: 0.8rem; margin-bottom: 15px; cursor: pointer; width: 100%;">
+                    📍 Use Current Location
+                </button>
+
+                <div class="input-group">
+                    <label>Amenities</label>
+                    <input type="text" name="amenities" placeholder="Wifi, AC, Parking, Lift">
+                </div>
+
+                <div class="input-group">
+                    <label>Description</label>
+                    <textarea name="description" rows="4" placeholder="Mention rules, nearby landmarks, etc."></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label>Photos</label>
+                    <input type="file" name="images" multiple accept="image/*" required>
+                </div>
+
+                <button type="submit" class="btn-primary" id="list-btn">Submit Listing</button>
+            </form>
+        </div>
+
+        <div id="success-section" class="success-card">
+            <div class="success-icon"><i data-lucide="check" size="32"></i></div>
+            <h2>Listing Submitted!</h2>
+            <p style="color: var(--text-gray); margin: 1rem 0 2rem;">Your property will be visible once reviewed by our team.</p>
+            <a href="/" class="btn-primary" style="text-decoration: none; display: inline-block;">Back to Home</a>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // Check login status on load
+        async function checkStatus() {
+            const resp = await fetch('/api/user/me');
+            const data = await resp.json();
+            if(!data.logged_in) {
+                document.getElementById('auth-section').style.display = 'block';
+                document.getElementById('form-section').style.display = 'none';
+            }
+        }
+        checkStatus();
+
+        async function sendOTP() {
+            const email = document.getElementById('auth-email').value;
+            if(!email) return alert("Email is required");
+            const btn = document.getElementById('otp-send-btn');
+            btn.innerText = "Sending...";
+            btn.disabled = true;
+
+            const resp = await fetch('/api/send-otp', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ email })
+            });
+            const data = await resp.json();
+            if(data.success) {
+                document.getElementById('email-step').style.display = 'none';
+                document.getElementById('otp-step').style.display = 'block';
+            } else {
+                alert(data.message);
+                btn.innerText = "Send OTP";
+                btn.disabled = false;
+            }
+        }
+
+        async function verifyOTP() {
+            const email = document.getElementById('auth-email').value;
+            const otp = document.getElementById('auth-otp').value;
+            const btn = document.getElementById('otp-verify-btn');
+            btn.innerText = "Verifying...";
+            btn.disabled = true;
+
+            const resp = await fetch('/api/verify-otp', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ email, otp })
+            });
+            const data = await resp.json();
+            if(data.success) {
+                document.getElementById('auth-section').style.display = 'none';
+                document.getElementById('form-section').style.display = 'block';
+            } else {
+                alert(data.message);
+                btn.innerText = "Verify & Continue";
+                btn.disabled = false;
+            }
+        }
+
+        function resetAuth() {
+            document.getElementById('email-step').style.display = 'block';
+            document.getElementById('otp-step').style.display = 'none';
+        }
+
+        function detectLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    document.getElementById('lat-field').value = pos.coords.latitude.toFixed(6);
+                    document.getElementById('lon-field').value = pos.coords.longitude.toFixed(6);
+                }, err => {
+                    alert("Unable to detect location. Please enter manually.");
+                });
+            }
+        }
+
+        document.getElementById('owner-flat-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('list-btn');
+            btn.innerText = "Submitting...";
+            btn.disabled = true;
+
+            const formData = new FormData(e.target);
+            try {
+                const resp = await fetch('/api/listings', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    document.getElementById('form-section').style.display = 'none';
+                    document.getElementById('success-section').style.display = 'block';
+                    lucide.createIcons();
+                }
+            } catch (err) {
+                alert("Something went wrong. Please try again.");
+                btn.innerText = "Submit Listing";
+                btn.disabled = false;
+            }
+        };
+    </script>
+</body>
+</html>

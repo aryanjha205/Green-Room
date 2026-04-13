@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GreenRoom | No Brokerage Room Rental</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="manifest" href="/static/manifest_user.json">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <meta name="theme-color" content="#88CC00">
+</head>
+<body>
+
+    <header>
+        <a href="/" class="logo">
+            <i data-lucide="home" style="color: var(--primary);"></i>
+            <span>Green<span>Room</span></span>
+        </a>
+        <div class="user-actions">
+            <div class="notification-wrapper" onclick="toggleNotifications()">
+                <i data-lucide="bell" style="cursor: pointer; color: var(--text-gray);"></i>
+                <div class="unread-badge" id="notif-dot"></div>
+            </div>
+        </div>
+    </header>
+
+    <div class="notification-panel" id="notif-panel">
+        <div class="notif-header">
+            <h3 style="font-size: 1rem;">Notifications</h3>
+            <button onclick="toggleNotifications()" style="background:none; border:none; cursor:pointer;"><i data-lucide="x" size="18"></i></button>
+        </div>
+        <div class="notif-list" id="notif-list">
+            <!-- Notifications will appear here -->
+        </div>
+    </div>
+
+    <div id="map-container">
+        <!-- Map loader or interactive map will go here -->
+    </div>
+
+    <main class="main-content">
+        <div class="filter-bar">
+            <button class="filter-btn active" onclick="filterListings('all')">All Rooms</button>
+            <button class="filter-btn" onclick="filterListings('nearest')">Nearest to Me</button>
+            <button class="filter-btn" onclick="toggleFilter('price_low')">Price: Low to High</button>
+            <button class="filter-btn" onclick="toggleFilter('price_high')">Price: High to Low</button>
+            <button class="filter-btn" onclick="toggleFilter('radius_5k')">< 5km Radius</button>
+        </div>
+
+        <h2 class="section-title">
+            Available Rooms
+            <span id="room-count" style="font-size: 0.9rem; font-weight: 400; color: var(--text-gray);">0 Results</span>
+        </h2>
+
+        <div class="listing-grid" id="listing-grid">
+            <!-- Skeleton cards while loading -->
+            <div class="property-card skeleton fade-up" style="height: 320px;"></div>
+            <div class="property-card skeleton fade-up" style="height: 320px; animation-delay: 0.1s;"></div>
+            <div class="property-card skeleton fade-up" style="height: 320px; animation-delay: 0.2s;"></div>
+        </div>
+    </main>
+
+    <nav class="bottom-nav">
+        <a href="/" class="nav-item active">
+            <i data-lucide="search"></i>
+            <span>Explore</span>
+        </a>
+        <a href="/list-room" class="nav-item">
+            <i data-lucide="plus-circle" style="color: var(--primary);"></i>
+            <span>Post Room</span>
+        </a>
+        <a href="/profile" class="nav-item">
+            <i data-lucide="user"></i>
+            <span>Profile</span>
+        </a>
+    </nav>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="/static/js/app.js"></script>
+    <script>
+        lucide.createIcons();
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js');
+        }
+
+        // Notifications logic
+        async function fetchNotifications() {
+            const resp = await fetch('/api/notifications');
+            const data = await resp.json();
+            const list = document.getElementById('notif-list');
+            const dot = document.getElementById('notif-dot');
+            
+            if (data.length === 0) {
+                list.innerHTML = '<div class="no-notifs">No notifications yet.</div>';
+                dot.style.display = 'none';
+                return;
+            }
+
+            const unread = data.some(n => !n.is_read);
+            dot.style.display = unread ? 'block' : 'none';
+
+            list.innerHTML = data.map(n => `
+                <div class="notif-item ${n.is_read ? '' : 'unread'}">
+                    <div class="notif-title">${n.title}</div>
+                    <div class="notif-desc">${n.message}</div>
+                    <div class="notif-time">${new Date(n.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                </div>
+            `).join('');
+        }
+
+        function toggleNotifications() {
+            const panel = document.getElementById('notif-panel');
+            const isVisible = panel.style.display === 'block';
+            panel.style.display = isVisible ? 'none' : 'block';
+            
+            if (isVisible) {
+                // Mark as read when closing
+                fetch('/api/notifications/read', { method: 'POST' });
+                document.getElementById('notif-dot').style.display = 'none';
+            } else {
+                fetchNotifications();
+            }
+        }
+
+        // Initial check
+        fetchNotifications();
+        setInterval(fetchNotifications, 30000); // Check every 30s
+    </script>
+</body>
+</html>
