@@ -199,48 +199,65 @@ header {
     transform: translateX(-50%) scale(0.95);
 }
 
-/* Mobile Responsive */
+/* Mobile Responsive - Bottom Sheet Experience */
 @media (max-width: 992px) {
     .app-layout {
-        height: calc(100vh - 120px);
+        height: 100vh;
+        overflow: hidden;
         flex-direction: column;
     }
 
     .map-section {
-        height: 100%;
-        width: 100%;
-        position: absolute;
+        position: fixed;
         top: 0;
         left: 0;
-        opacity: 0;
-        pointer-events: none;
-        transform: translateY(20px);
-    }
-
-    .map-section.active {
+        width: 100%;
+        height: 100vh;
+        z-index: 5;
         opacity: 1;
         pointer-events: all;
-        transform: translateY(0);
-        z-index: 50;
+        transform: none;
     }
 
     .content-section {
-        height: 100%;
+        position: fixed;
+        bottom: 0;
+        left: 0;
         width: 100%;
-        opacity: 1;
-        pointer-events: all;
+        height: 85vh;
+        z-index: 100;
+        background: var(--white);
+        border-radius: 32px 32px 0 0;
+        box-shadow: 0 -10px 25px rgba(0,0,0,0.1);
+        transform: translateY(calc(85vh - 180px)); /* Initial minimized state showing search/filter */
+        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .content-section.expanded {
         transform: translateY(0);
     }
 
-    .content-section.hidden {
-        opacity: 0;
-        pointer-events: none;
-        transform: translateY(-20px);
-        display: none;
+    /* Grab Handle for Sheet */
+    .content-section::before {
+        content: '';
+        width: 40px;
+        height: 5px;
+        background: #e5e7eb;
+        border-radius: 10px;
+        position: absolute;
+        top: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 101;
+    }
+
+    .search-filter-wrapper {
+        padding-top: 2rem; /* space for handle */
+        border-radius: 32px 32px 0 0;
     }
 
     .view-toggle {
-        display: flex;
+        display: none !important; /* Managed by sheet behavior now */
     }
 }
 

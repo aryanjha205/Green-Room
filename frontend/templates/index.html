@@ -145,19 +145,43 @@
             }
         }
 
-        function toggleMobileView(view) {
-            const mapSec = document.getElementById('map-section');
-            const listSec = document.getElementById('list-section');
-            
-            if (view === 'map') {
-                mapSec.classList.add('active');
-                listSec.classList.add('hidden');
-                setTimeout(() => map.invalidateSize(), 300); // Fix Leaflet gray Tiles
-            } else {
-                mapSec.classList.remove('active');
-                listSec.classList.remove('hidden');
+        // Mobile Bottom Sheet Logic
+        const sheet = document.getElementById('list-section');
+        const sheetHeader = sheet.querySelector('.search-filter-wrapper');
+        let touchStart = 0;
+        
+        // Toggle on click/tap
+        sheetHeader?.addEventListener('click', () => {
+            if (window.innerWidth < 992) {
+                sheet.classList.toggle('expanded');
+                if (sheet.classList.contains('expanded')) {
+                    setTimeout(() => map.invalidateSize(), 400);
+                }
             }
-        }
+        });
+
+        // Toggle on Swipe
+        sheet.addEventListener('touchstart', e => {
+            touchStart = e.touches[0].clientY;
+        }, {passive: true});
+
+        sheet.addEventListener('touchmove', e => {
+            const touchEnd = e.touches[0].clientY;
+            const diff = touchStart - touchEnd;
+            
+            // Swipe Up -> Expand
+            if (diff > 50 && !sheet.classList.contains('expanded')) {
+                sheet.classList.add('expanded');
+                setTimeout(() => map.invalidateSize(), 400);
+            }
+            // Swipe Down -> Minimize (only if at the top of list)
+            if (diff < -50 && sheet.classList.contains('expanded') && sheet.scrollTop <= 0) {
+                sheet.classList.remove('expanded');
+            }
+        }, {passive: true});
+
+        // Hide old toggle function (now redundant)
+        function toggleMobileView() {}
 
         // Search Filter Logic
         document.getElementById('search-input')?.addEventListener('input', (e) => {
