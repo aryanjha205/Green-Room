@@ -44,24 +44,48 @@
     <div class="page-container" id="profile-page" style="display: none; max-width: 800px; margin: 0 auto; padding: 1rem;">
         <div class="profile-header">
             <div class="avatar" id="user-initial">U</div>
-            <h2 id="user-email">...</h2>
-            <p style="color: var(--text-gray); font-size: 0.9rem;">Verified Homeowner</p>
+            <h2 id="display-name">...</h2>
+            <p id="display-email" style="color: var(--text-gray); font-size: 0.9rem;">...</p>
+            <p id="display-phone" style="font-weight: 600; color: var(--primary); margin-top: 5px;"></p>
             
             <div class="stats-row">
                 <div class="stat-box">
-                    <div class="stat-val" id="count-active">0</div>
-                    <div class="stat-lbl">Active Listings</div>
+                    <div class="stat-val" id="count-listings">0</div>
+                    <div class="stat-lbl">My Listings</div>
                 </div>
                 <div class="stat-box">
-                    <div class="stat-val" id="count-pending">0</div>
-                    <div class="stat-lbl">Pending Review</div>
+                    <div class="stat-val" id="user-status">Verified</div>
+                    <div class="stat-lbl">Account Status</div>
                 </div>
             </div>
         </div>
 
-        <h3>My Property Listings</h3>
-        <div class="listing-grid" id="my-listings" style="margin-top: 1rem;">
-            <!-- User listings -->
+        <!-- Profile Completion Form -->
+        <div id="profile-form-section" style="display: none; background: white; padding: 2rem; border-radius: 24px; box-shadow: var(--shadow-soft); margin-bottom: 2rem; border: 2px solid var(--primary-light);">
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <i data-lucide="user-plus" style="color: var(--primary);"></i>
+                <h3 style="margin-top: 10px;">Complete Your Profile</h3>
+                <p style="font-size: 0.85rem; color: var(--text-gray);">This info will show on your property cards for direct contact.</p>
+            </div>
+            <div class="input-group">
+                <label>Full Name</label>
+                <input type="text" id="setup-name" placeholder="Enter your full name">
+            </div>
+            <div class="input-group">
+                <label>Phone Number (WhatsApp preferred)</label>
+                <input type="tel" id="setup-phone" placeholder="e.g. +91 98765 43210">
+            </div>
+            <button class="btn-primary" onclick="saveProfile()" id="save-profile-btn">Save Profile Details</button>
+        </div>
+
+        <div id="my-listings-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3>My Property Listings</h3>
+                <a href="/list-room" class="btn-primary" style="padding: 8px 16px; width: auto; font-size: 0.8rem; text-decoration: none;">+ Add New</a>
+            </div>
+            <div class="listing-grid" id="my-listings">
+                <!-- User listings -->
+            </div>
         </div>
     </div>
 
@@ -100,18 +124,80 @@
             }
 
             document.getElementById('profile-page').style.display = 'block';
-            document.getElementById('user-email').innerText = data.email;
+            document.getElementById('display-email').innerText = data.email;
             document.getElementById('user-initial').innerText = data.email[0].toUpperCase();
+            
+            if (!data.name || !data.phone) {
+                document.getElementById('profile-form-section').style.display = 'block';
+                document.getElementById('display-name').innerText = "New User";
+            } else {
+                document.getElementById('display-name').innerText = data.name;
+                document.getElementById('display-phone').innerText = `📞 ${data.phone}`;
+                document.getElementById('profile-form-section').style.display = 'none';
+            }
             
             fetchUserListings();
         }
 
+        async function saveProfile() {
+            const name = document.getElementById('setup-name').value;
+            const phone = document.getElementById('setup-phone').value;
+            const btn = document.getElementById('save-profile-btn');
+
+            if (!name || !phone) {
+                alert("Please fill all details");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = "Saving...";
+
+            const resp = await fetch('/api/user/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, phone })
+            });
+
+            const res = await resp.json();
+            if (res.success) {
+                initProfile(); // Refresh
+            } else {
+                alert("Error: " + res.message);
+                btn.disabled = false;
+                btn.innerText = "Save Profile Details";
+            }
+        }
+
         async function fetchUserListings() {
-            const resp = await fetch('/api/listings'); // We need a way to filter or use a specific endpoint
-            const all = await resp.json();
-            // Since we don't have a specific 'my-listings' endpoint yet, we filter on client
-            // But usually we'd want /api/user/listings
-            // For now, I'll update app.py to provide /api/user/listings
+            const resp = await fetch('/api/user/listings');
+            const data = await resp.json();
+            const grid = document.getElementById('my-listings');
+            document.getElementById('count-listings').innerText = data.length;
+
+            if (data.length === 0) {
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #999;">You haven\'t posted any rooms yet.</div>';
+                return;
+            }
+
+            grid.innerHTML = data.map(room => `
+                <div class="property-card fade-up">
+                    <div class="card-img-container">
+                        <img src="${room.images[0] || 'https://via.placeholder.com/400x300'}" alt="${room.title}">
+                        <div class="status-overlay" style="position: absolute; top: 10px; right: 10px;">
+                            <span class="status-badge ${room.is_approved ? 'status-approved' : 'status-pending'}">
+                                ${room.is_approved ? 'Live' : 'Pending Review'}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <h4 class="card-title" style="font-size: 0.95rem;">${room.title}</h4>
+                        <div style="font-size: 0.8rem; color: var(--text-gray); margin-top: 5px;">
+                            ₹${room.price.toLocaleString()} / month
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
         }
 
         async function logout() {

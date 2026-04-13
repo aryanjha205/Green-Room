@@ -25,20 +25,7 @@ function initMap() {
     }).addTo(map);
 }
 
-async function fetchListings(lat = null, lon = null) {
-    let url = '/api/listings';
-    if(lat && lon) url += `?lat=${lat}&lon=${lon}`;
-    
-    try {
-        const response = await fetch(url);
-        const data = await response.json();
-        renderListings(data);
-        updateMapMarkers(data);
-        document.getElementById('room-count').innerText = `${data.length} Results`;
-    } catch (e) {
-        console.error("Failed to load listings", e);
-    }
-}
+
 
 function renderListings(listings) {
     const grid = document.getElementById('listing-grid');
@@ -68,11 +55,18 @@ function renderListings(listings) {
                 <h3 class="card-title">${room.title}</h3>
                 <div class="card-location">
                     <i data-lucide="map-pin" size="14"></i> 
-                    ${room.distance ? `${room.distance.toFixed(1)} km away` : 'Location available'}
+                    ${room.distance ? `${room.distance.toFixed(1)} km away` : 'Near you'}
+                </div>
+                <div class="card-stats">
+                    <div style="margin-bottom: 8px; font-weight: 600; color: var(--text-dark); display: flex; align-items: center; gap: 5px;">
+                        <i data-lucide="user" size="14" style="color: var(--primary);"></i> ${room.owner_name}
+                    </div>
                 </div>
                 <div class="card-stats">
                     <span style="display:flex; align-items:center; gap:4px;"><i data-lucide="shield-check" size="14" style="color:var(--primary);"></i> No Brokerage</span>
-                    <span style="display:flex; align-items:center; gap:4px;"><i data-lucide="zap" size="14" style="color:#FFA000;"></i> Top Rated</span>
+                    <a href="tel:${room.owner_phone}" class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem; text-decoration: none; width: auto; display: inline-flex; align-items: center; gap: 5px;">
+                        <i data-lucide="phone" size="14"></i> Call Owner
+                    </a>
                 </div>
             </div>
         `;
@@ -93,12 +87,14 @@ function updateMapMarkers(listings) {
             const imgPath = firstImg.startsWith('http') ? firstImg : `/uploads/${firstImg}`;
             const marker = L.marker([room.lat, room.lon]).addTo(map);
             marker.bindPopup(`
-                <div style="min-width: 150px; font-family: 'Outfit';">
-                    <img src="${imgPath}" style="width: 100%; height: 80px; object-fit: cover; border-radius: 8px; margin-bottom: 8px;">
-                    <b style="color: var(--primary);">${room.title}</b><br>
-                    <span style="font-weight: 700;">₹${room.price} / mo</span><br>
-                    <span style="font-size: 0.8rem; color: #666;">Deposit: ₹${room.deposit}</span><br>
-                    <button style="width: 100%; background: var(--primary); color: white; border: none; padding: 5px; border-radius: 5px; margin-top: 5px; cursor: pointer;">View Contact</button>
+                <div style="min-width: 180px; font-family: 'Outfit';">
+                    <img src="${imgPath}" style="width: 100%; height: 90px; object-fit: cover; border-radius: 12px; margin-bottom: 8px;">
+                    <div style="font-weight: 700; color: var(--primary);">₹${room.price} / mo</div>
+                    <div style="font-weight: 600; margin: 4px 0;">${room.title}</div>
+                    <div style="font-size: 0.8rem; color: #666; margin-bottom: 8px;">Owner: ${room.owner_name}</div>
+                    <a href="tel:${room.owner_phone}" style="width: 100%; background: var(--primary); color: white; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; border-radius: 8px; font-weight: 600;">
+                        <i data-lucide="phone" size="16"></i> Contact Owner
+                    </a>
                 </div>
             `);
             markers.push(marker);
@@ -112,7 +108,29 @@ function updateMapMarkers(listings) {
 }
 
 // Simple Filter Shells
+// Simple Filter Shells
+let currentListings = [];
+
+async function fetchListings(lat = null, lon = null) {
+    let url = '/api/listings';
+    if(lat && lon) url += `?lat=${lat}&lon=${lon}`;
+    
+    try {
+        const response = await fetch(url);
+        currentListings = await response.json();
+        renderListings(currentListings);
+        updateMapMarkers(currentListings);
+        document.getElementById('room-count').innerText = `${currentListings.length} Results`;
+    } catch (e) {
+        console.error("Failed to load listings", e);
+    }
+}
+
 function filterListings(type) {
+    // Reset active filters
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+
     if(type === 'nearest') {
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(p => fetchListings(p.coords.latitude, p.coords.longitude));
@@ -120,6 +138,23 @@ function filterListings(type) {
     } else {
         fetchListings();
     }
+}
+
+function toggleFilter(type) {
+    const btn = event.target;
+    btn.classList.toggle('active');
+    
+    let filtered = [...currentListings];
+    
+    if (type === 'price_low') {
+        filtered.sort((a, b) => a.price - b.price);
+    } else if (type === 'radius_5k') {
+        filtered = filtered.filter(item => !item.distance || item.distance <= 5);
+    }
+    
+    renderListings(filtered);
+    updateMapMarkers(filtered);
+    document.getElementById('room-count').innerText = `${filtered.length} Results`;
 }
 
 // Run init

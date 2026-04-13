@@ -189,9 +189,15 @@ def mark_notifications_read():
 @app.route('/api/user/me')
 def get_me():
     email = session.get('user_email')
+    if not email:
+        return jsonify({"logged_in": False})
+    
+    user = users_collection.find_one({"email": email})
     return jsonify({
-        "logged_in": bool(email),
-        "email": email
+        "logged_in": True,
+        "email": email,
+        "name": user.get('name') if user else None,
+        "phone": user.get('phone') if user else None
     })
 
 @app.route('/api/listings', methods=['GET'])
@@ -225,6 +231,51 @@ def get_listings():
     if lat and lon:
         listings.sort(key=lambda x: x['distance'])
 
+    # Attach owner info for contact functionality
+    for l in listings:
+        owner = users_collection.find_one({"email": l.get('email')})
+        if owner:
+            l['owner_name'] = owner.get('name', 'Room Owner')
+            l['owner_phone'] = owner.get('phone', 'Hidden')
+        else:
+            l['owner_name'] = 'Room Owner'
+            l['owner_phone'] = 'Hidden'
+
+    return jsonify(listings)
+
+@app.route('/api/user/profile', methods=['POST'])
+def update_profile():
+    email = session.get('user_email')
+    if not email:
+        return jsonify({"success": False, "message": "Unauthorized"}), 401
+    
+    data = request.json
+    name = data.get('name')
+    phone = data.get('phone')
+    
+    if not name or not phone:
+        return jsonify({"success": False, "message": "Name and phone are required"}), 400
+        
+    users_collection.update_one(
+        {"email": email},
+        {"$set": {
+            "name": name,
+            "phone": phone,
+            "updated_at": datetime.datetime.utcnow()
+        }},
+        upsert=True
+    )
+    return jsonify({"success": True})
+
+@app.route('/api/user/listings', methods=['GET'])
+def get_user_listings():
+    email = session.get('user_email')
+    if not email:
+        return jsonify([])
+    
+    listings = list(listings_collection.find({"email": email}))
+    for l in listings:
+        l['_id'] = str(l['_id'])
     return jsonify(listings)
 
 @app.route('/api/listings', methods=['POST'])

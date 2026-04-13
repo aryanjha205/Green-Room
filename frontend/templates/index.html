@@ -36,31 +36,52 @@
         </div>
     </div>
 
-    <div id="map-container">
-        <!-- Map loader or interactive map will go here -->
+    <div class="app-layout">
+        <!-- Section: Map Area -->
+        <section class="map-section" id="map-section">
+            <div id="map-container"></div>
+            <!-- Mobile Toggle Button (to show list) -->
+            <button class="view-toggle list-view-btn" onclick="toggleMobileView('list')">
+                <i data-lucide="list"></i> Show List
+            </button>
+        </section>
+
+        <!-- Section: Content Area (Filter + Showcase) -->
+        <section class="content-section" id="list-section">
+            <div class="search-filter-wrapper">
+                <div class="search-bar">
+                    <i data-lucide="search" class="search-icon"></i>
+                    <input type="text" placeholder="Search by locality or PG name..." id="search-input">
+                </div>
+                
+                <div class="filter-bar">
+                    <button class="filter-btn active" onclick="filterListings('all')">All Rooms</button>
+                    <button class="filter-btn" onclick="filterListings('nearest')">Nearest</button>
+                    <button class="filter-btn" onclick="toggleFilter('price_low')">Low Price</button>
+                    <button class="filter-btn" onclick="toggleFilter('radius_5k')">< 5km</button>
+                </div>
+            </div>
+
+            <main class="showcase-main">
+                <div class="title-row">
+                    <h2 class="section-title">Available Rooms</h2>
+                    <span id="room-count" class="result-badge">0 Results</span>
+                </div>
+
+                <div class="listing-grid" id="listing-grid">
+                    <!-- Skeleton cards while loading -->
+                    <div class="property-card skeleton fade-up"></div>
+                    <div class="property-card skeleton fade-up"></div>
+                    <div class="property-card skeleton fade-up"></div>
+                </div>
+            </main>
+
+            <!-- Mobile Toggle Button (to show map) -->
+            <button class="view-toggle map-view-btn" onclick="toggleMobileView('map')">
+                <i data-lucide="map"></i> Show Map
+            </button>
+        </section>
     </div>
-
-    <main class="main-content">
-        <div class="filter-bar">
-            <button class="filter-btn active" onclick="filterListings('all')">All Rooms</button>
-            <button class="filter-btn" onclick="filterListings('nearest')">Nearest to Me</button>
-            <button class="filter-btn" onclick="toggleFilter('price_low')">Price: Low to High</button>
-            <button class="filter-btn" onclick="toggleFilter('price_high')">Price: High to Low</button>
-            <button class="filter-btn" onclick="toggleFilter('radius_5k')">< 5km Radius</button>
-        </div>
-
-        <h2 class="section-title">
-            Available Rooms
-            <span id="room-count" style="font-size: 0.9rem; font-weight: 400; color: var(--text-gray);">0 Results</span>
-        </h2>
-
-        <div class="listing-grid" id="listing-grid">
-            <!-- Skeleton cards while loading -->
-            <div class="property-card skeleton fade-up" style="height: 320px;"></div>
-            <div class="property-card skeleton fade-up" style="height: 320px; animation-delay: 0.1s;"></div>
-            <div class="property-card skeleton fade-up" style="height: 320px; animation-delay: 0.2s;"></div>
-        </div>
-    </main>
 
     <nav class="bottom-nav">
         <a href="/" class="nav-item active">
@@ -123,6 +144,40 @@
                 fetchNotifications();
             }
         }
+
+        function toggleMobileView(view) {
+            const mapSec = document.getElementById('map-section');
+            const listSec = document.getElementById('list-section');
+            
+            if (view === 'map') {
+                mapSec.classList.add('active');
+                listSec.classList.add('hidden');
+                setTimeout(() => map.invalidateSize(), 300); // Fix Leaflet gray Tiles
+            } else {
+                mapSec.classList.remove('active');
+                listSec.classList.remove('hidden');
+            }
+        }
+
+        // Search Filter Logic
+        document.getElementById('search-input')?.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const cards = document.querySelectorAll('.property-card');
+            let count = 0;
+
+            cards.forEach(card => {
+                const title = card.querySelector('.card-title')?.innerText.toLowerCase() || '';
+                const location = card.querySelector('.card-location')?.innerText.toLowerCase() || '';
+                
+                if (title.includes(query) || location.includes(query)) {
+                    card.style.display = 'block';
+                    count++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            document.getElementById('room-count').innerText = `${count} Results`;
+        });
 
         // Initial check
         fetchNotifications();
