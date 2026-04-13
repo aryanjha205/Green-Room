@@ -23,7 +23,10 @@ CORS(app)
 
 # MongoDB Setup
 MONGO_URI = os.getenv('MONGO_URI')
-client = MongoClient(MONGO_URI)
+if not MONGO_URI:
+    print("WARNING: MONGO_URI is missing, the app will fail on database calls.")
+    # For Vercel, we must have it to function
+client = MongoClient(MONGO_URI if MONGO_URI else 'mongodb://localhost:27017')
 db = client[os.getenv('DB_NAME', 'room_rental_db')]
 listings_collection = db.listings
 
@@ -59,8 +62,11 @@ users_collection = db.users
 otp_collection = db.otps
 notifications_collection = db.notifications
 
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
+try:
+    if not os.path.exists(UPLOAD_FOLDER):
+        os.makedirs(UPLOAD_FOLDER)
+except Exception as e:
+    print(f"Directory creation skipped (Read-only environment): {e}")
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
