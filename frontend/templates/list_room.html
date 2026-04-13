@@ -67,19 +67,16 @@
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                    <div class="input-group">
-                        <label>Latitude</label>
-                        <input type="text" name="lat" id="lat-field" placeholder="19.076" required>
-                    </div>
-                    <div class="input-group">
-                        <label>Longitude</label>
-                        <input type="text" name="lon" id="lon-field" placeholder="72.877" required>
-                    </div>
+                <div id="location-status" style="margin-bottom: 2rem; padding: 1.5rem; background: #f0fdf4; border-radius: 16px; border: 1px dashed var(--primary); text-align: center;">
+                    <i data-lucide="map-pin" style="color: var(--primary); margin-bottom: 8px;"></i>
+                    <div id="location-text" style="font-size: 0.9rem; font-weight: 500;">Location Not Set</div>
+                    <p style="font-size: 0.75rem; color: var(--text-gray); margin: 8px 0;">We need your location to show rooms to nearby seekers.</p>
+                    <button type="button" onclick="detectLocation()" class="btn-primary" style="padding: 10px; font-size: 0.85rem; background: var(--primary-light);">
+                        📍 Detect My Location
+                    </button>
+                    <input type="hidden" name="lat" id="lat-field" required>
+                    <input type="hidden" name="lon" id="lon-field" required>
                 </div>
-                <button type="button" onclick="detectLocation()" style="background: #f0fdf4; color: var(--primary); border: 1px dashed var(--primary); padding: 8px; border-radius: 8px; font-size: 0.8rem; margin-bottom: 15px; cursor: pointer; width: 100%;">
-                    📍 Use Current Location
-                </button>
 
                 <div class="input-group">
                     <label>Amenities</label>
@@ -174,12 +171,18 @@
         }
 
         function detectLocation() {
+            const statusText = document.getElementById('location-text');
+            statusText.innerText = "Detecting...";
+            
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(pos => {
                     document.getElementById('lat-field').value = pos.coords.latitude.toFixed(6);
                     document.getElementById('lon-field').value = pos.coords.longitude.toFixed(6);
+                    statusText.innerText = "✅ Location Locked!";
+                    statusText.style.color = "var(--primary)";
                 }, err => {
-                    alert("Unable to detect location. Please enter manually.");
+                    statusText.innerText = "❌ Detection Failed";
+                    alert("Please allow location access in your browser settings.");
                 });
             }
         }
