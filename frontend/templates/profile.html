@@ -42,6 +42,15 @@
     </div>
 
     <div class="page-container" id="profile-page" style="display: none; max-width: 800px; margin: 0 auto; padding: 1rem;">
+        <!-- PWA Install Banner -->
+        <div id="install-banner" style="display: none; background: #88CC00; color: white; padding: 1rem; border-radius: 16px; margin-bottom: 2rem; align-items: center; justify-content: space-between; box-shadow: var(--shadow-green);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i data-lucide="download"></i>
+                <div style="font-size: 0.9rem; font-weight: 600;">Install GreenRoom for a faster experience!</div>
+            </div>
+            <button onclick="installApp()" style="background: white; color: #88CC00; border: none; padding: 8px 16px; border-radius: 10px; font-weight: 700; cursor: pointer; white-space: nowrap;">Install</button>
+        </div>
+
         <div class="profile-header">
             <div class="avatar" id="user-initial">U</div>
             <h2 id="display-name">...</h2>
@@ -58,11 +67,6 @@
                     <div class="stat-lbl">Account Status</div>
                 </div>
             </div>
-            
-            <!-- PWA Install Button -->
-            <button id="pwa-install-btn" class="btn-primary" style="display: none; margin-top: 1.5rem; background: var(--text-dark); gap: 10px; align-items: center; justify-content: center;">
-                <i data-lucide="download-cloud"></i> Install GreenRoom App
-            </button>
         </div>
 
         <!-- Profile Completion Form -->
@@ -217,28 +221,6 @@
 
         initProfile();
 
-        // PWA Install Logic
-        let deferredPrompt;
-        const installBtn = document.getElementById('pwa-install-btn');
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            installBtn.style.display = 'flex';
-            lucide.createIcons();
-        });
-
-        installBtn.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    installBtn.style.display = 'none';
-                }
-                deferredPrompt = null;
-            }
-        });
-
         // Notification JS (reused)
         async function fetchNotifications() {
             const resp = await fetch('/api/notifications');
@@ -272,6 +254,25 @@
             }
         }
         fetchNotifications();
+
+        // PWA Installation Logic
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('install-banner').style.display = 'flex';
+            lucide.createIcons();
+        });
+
+        async function installApp() {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                document.getElementById('install-banner').style.display = 'none';
+            }
+            deferredPrompt = null;
+        }
     </script>
 </body>
 </html>

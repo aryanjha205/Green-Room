@@ -99,18 +99,12 @@ function updateMapMarkers(listings) {
                     </div>
                     <div style="font-weight: 600; margin-bottom: 8px; font-size: 0.9rem;">${room.title}</div>
                     
-                    ${currentUser.logged_in ? `
-                        <div style="background: #f9fafb; padding: 10px; border-radius: 10px; border: 1px solid #eee;">
-                            <textarea id="msg-${room._id}" placeholder="Ask about availability..." style="width: 100%; border: none; background: transparent; font-size: 0.8rem; outline: none; resize: none; height: 40px;"></textarea>
-                            <button onclick="sendInquiry('${room._id}')" id="btn-${room._id}" style="width: 100%; background: var(--primary); color: white; border: none; padding: 8px; border-radius: 8px; font-weight: 600; font-size: 0.8rem; cursor: pointer; margin-top: 5px; display: flex; align-items: center; justify-content: center; gap: 5px;">
-                                <i data-lucide="send" size="14"></i> Send Message
-                            </button>
-                        </div>
-                    ` : `
-                        <a href="/list-room" style="display: block; text-align: center; background: #f3f4f6; color: var(--text-dark); text-decoration: none; padding: 12px; border-radius: 12px; font-size: 0.85rem; font-weight: 600; border: 1px dashed #ccc;">
-                            🔑 Login to Ask Availability
-                        </a>
-                    `}
+                    <div style="background: #f9fafb; padding: 10px; border-radius: 10px; border: 1px solid #eee;">
+                        <textarea id="msg-${room._id}" placeholder="Ask about availability..." style="width: 100%; border: none; background: transparent; font-size: 0.8rem; outline: none; resize: none; height: 40px;"></textarea>
+                        <button onclick="sendInquiry('${room._id}')" id="btn-${room._id}" style="width: 100%; background: var(--primary); color: white; border: none; padding: 8px; border-radius: 8px; font-weight: 600; font-size: 0.8rem; cursor: pointer; margin-top: 5px; display: flex; align-items: center; justify-content: center; gap: 5px;">
+                            <i data-lucide="send" size="14"></i> Send Message
+                        </button>
+                    </div>
 
                     <a href="tel:${room.owner_phone}" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; margin-top: 10px; color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.85rem; border: 1px solid var(--primary); border-radius: 8px;">
                         <i data-lucide="phone" size="16"></i> Call Owner

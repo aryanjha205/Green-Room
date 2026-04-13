@@ -280,10 +280,6 @@ def get_user_listings():
 
 @app.route('/api/listings/<id>/inquiry', methods=['POST'])
 def send_inquiry(id):
-    sender_email = session.get('user_email')
-    if not sender_email:
-        return jsonify({"success": False, "message": "Please login to send inquiries"}), 401
-        
     data = request.json
     message_text = data.get('message')
     if not message_text:
@@ -293,6 +289,7 @@ def send_inquiry(id):
     if not listing:
         return jsonify({"success": False, "message": "Listing not found"}), 404
         
+    sender_email = session.get('user_email', 'A Potential Tenant')
     owner_email = listing.get('email')
     
     if not owner_email:
